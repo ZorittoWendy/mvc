@@ -9,16 +9,12 @@ class Home extends Page
 {
     public static function getHome()
     {
-        $obOrganization = new Organization;
-        echo "<pre>";
-        print_r($obOrganization);
-        echo "</pre>";
-        exit;
+        $obOrganization = new Organization();
 
         $content = View::render("pages/home", [
-            "name" => "ZORITTO - DEV",
-            "description" => "liekdin: www.linkedin.com/in/wendeson-farias",
-            "site" => "www.linkedin.com/in/wendeson-farias",
+            "name" => $obOrganization->name,
+            "description" => $obOrganization->description,
+            "site" => $obOrganization->site,
         ]);
 
         return parent::getPage("ZORITTO - canal - Home", $content);
