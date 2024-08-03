@@ -10,7 +10,7 @@ define("URL", "http://localhost/mvc");
 
 $obRouter = new Router(URL);
 
-$obRouter->get("/A", [
+$obRouter->get("/", [
     function () {
         return new Response(200, Home::getHome());
     },

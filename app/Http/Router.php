@@ -49,6 +49,21 @@ class Router
         return $this->addRoute("GET", $route, $params);
     }
 
+    public function post($route, $params = [])
+    {
+        return $this->addRoute("POST", $route, $params);
+    }
+
+    public function put($route, $params = [])
+    {
+        return $this->addRoute("PUT", $route, $params);
+    }
+
+    public function delete($route, $params = [])
+    {
+        return $this->addRoute("DELETE", $route, $params);
+    }
+
     private function getUri()
     {
         $uri = $this->request->getUri();
@@ -63,11 +78,11 @@ class Router
         $uri = $this->getUri();
 
         $httpMethod = $this->request->gethttpMethod();
-        
+
         foreach($this->routes as $patternRoute=>$methods)
         {
 
-            if (preg_match($patternRoute,$uri)) 
+            if (preg_match($patternRoute,$uri))
             {
                 if ($methods[$httpMethod])
                 {
@@ -79,17 +94,23 @@ class Router
         }
 
         throw new Exception("URL não encontrada", 404);
-        
+
     }
 
     public function run()
     {
         try {
             $route = $this->getRoute();
-            echo "<pre>";
-            print_r($route);
-            echo "</pre>";
-            exit();
+
+            if (!isset($route['controller']))
+            {
+                throw new Exception("A URL não pode ser processada", 500);
+            }
+
+            $args = [];
+
+            return call_user_func_array($route['controller'], $args);
+            
         } catch (Exception $e) {
             return new Response($e->getCode(), $e->getMessage());
         }
