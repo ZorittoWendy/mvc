@@ -4,6 +4,7 @@ namespace App\Http;
 
 use \Closure;
 use \Exception;
+use \ReflectionFunction;
 
 class Router
 {
@@ -37,6 +38,14 @@ class Router
                 unset($params[$key]);
                 continue;
             }
+        }
+
+        $params["variables"] = [];
+
+        $patternVariable = "/{(.*?)}/";
+        if (preg_match_all($patternVariable, $route, $matches)) {
+            $route = preg_replace($patternVariable, "(.*?)", $route);
+            $params["variables"] = $matches[1];
         }
 
         $patternRoute = "/^" . str_replace("/", "\/", $route) . '$/';
@@ -79,13 +88,19 @@ class Router
 
         $httpMethod = $this->request->gethttpMethod();
 
-        foreach($this->routes as $patternRoute=>$methods)
-        {
+        foreach ($this->routes as $patternRoute => $methods) {
+            if (preg_match($patternRoute, $uri, $matches)) {
+                if (isset ($methods[$httpMethod])) {
+                    unset($matches[0]);
 
-            if (preg_match($patternRoute,$uri))
-            {
-                if ($methods[$httpMethod])
-                {
+                    $keys = $methods[$httpMethod]["variables"];
+                    $methods[$httpMethod]["variables"] = array_combine(
+                        $keys,
+                        $matches
+                    );
+                    $methods[$httpMethod]["variables"]["request"] =
+                        $this->request;
+
                     return $methods[$httpMethod];
                 }
 
@@ -94,7 +109,6 @@ class Router
         }
 
         throw new Exception("URL não encontrada", 404);
-
     }
 
     public function run()
@@ -102,15 +116,21 @@ class Router
         try {
             $route = $this->getRoute();
 
-            if (!isset($route['controller']))
-            {
+            if (!isset($route["controller"])) {
                 throw new Exception("A URL não pode ser processada", 500);
             }
 
             $args = [];
 
-            return call_user_func_array($route['controller'], $args);
-            
+            $reflection = new ReflectionFunction($route["controller"]);
+
+            foreach($reflection->getParameters() as $parameter)
+            {
+                $name = $parameter->getName();
+                $args[$name] = $route['variables'][$name] ?? '';
+            }
+
+            return call_user_func_array($route["controller"], $args);
         } catch (Exception $e) {
             return new Response($e->getCode(), $e->getMessage());
         }
